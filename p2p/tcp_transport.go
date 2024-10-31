@@ -110,15 +110,12 @@ func (t *TCPTransport) handleConn(conn net.Conn){
 	
 	// Read loop
 	rpc := RPC{}
-	// buf := make([]byte,2000)
+
 	for {
-		// n, err := conn.Read(buf)
-		// if err!=nil{
-		// 	fmt.Printf("TCP read error : %s\n",err)
-		// }
-		if err := t.Decoder.Decode(conn,&rpc) ; err != nil{
-			fmt.Printf("TCP error: %s\n", err)
-			continue
+
+		err := t.Decoder.Decode(conn,&rpc)
+		if err!=nil{
+			return
 		}
 
 		rpc.From = conn.RemoteAddr()
