@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"sync"
 
 	"github.com/ayushn2/distri_vault.git/p2p"
 )
@@ -16,6 +18,9 @@ type FileServerOpts struct{
 
 type FileServer struct{
 	FileServerOpts
+	
+	peerLock sync.Mutex
+	peers map[string]p2p.Peer
 	store *Store
 	quitch chan struct{}
 }
@@ -29,11 +34,33 @@ func NewFileServer(opts FileServerOpts) *FileServer{
 		FileServerOpts: opts,
 		store: NewStore(storeOpts),
 		quitch: make(chan struct{}),
+		peers: make(map[string]p2p.Peer),
 	}
+}
+
+type Payload struct{
+	Key string
+	Data []byte
+}
+
+func ( s *FileServer) StoreData(key string,r io.Reader) error{
+	// 1. Store this file to disk
+	// 2. Broadcast this file to all known peers in the network
+	
+	return nil
 }
 
 func (s *FileServer) Stop(){
 	close(s.quitch)
+}
+
+func (s *FileServer) OnPeer(p p2p.Peer) error{
+	s.peerLock.Lock()
+	defer s.peerLock.Unlock()
+	s.peers[p.RemoteAddr().String()] = p
+
+	log.Printf("connected with remote %s", p.RemoteAddr())
+	return nil
 }
 
 func (s *FileServer) loop(){

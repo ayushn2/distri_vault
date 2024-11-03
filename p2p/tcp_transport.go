@@ -25,6 +25,16 @@ func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer{
 	}
 }
 
+func (p *TCPPeer) Send(b []byte) error{
+	_, err := p.conn.Write(b)
+	return err
+}
+
+// Remote addr implements the Peer interface and will return the remote address of its underlying connection
+func (p *TCPPeer) 	RemoteAddr() net.Addr{
+	return p.conn.RemoteAddr()
+}
+
 // Close implements the peer interface
 func (p * TCPPeer) Close() error{
 	return p.conn.Close()
