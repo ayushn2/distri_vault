@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"log"
+	"time"
+
 	// "time"
 
 	"github.com/ayushn2/distri_vault.git/p2p"
@@ -36,7 +39,11 @@ func main(){
 		log.Fatal(s1.Start())
 	}() 
 
-	s2.Start()
+	time.Sleep(1 * time.Second)
 
-	
+	go s2.Start()
+	time.Sleep(1 * time.Second)
+
+	data := bytes.NewReader([]byte("my big data file here!"))
+	s2.StoreData("myprivatedata",data)
 }
