@@ -41,9 +41,13 @@ func main(){
 
 	time.Sleep(1 * time.Second)
 
-	go s2.Start()
+
+	go func(){
+		log.Fatal(s2.Start())
+	}()
 	time.Sleep(1 * time.Second)
 
-	data := bytes.NewReader([]byte("my big data file here!"))
+	data := bytes.NewReader([]byte("my big data file here"))
 	s2.StoreData("myprivatedata",data)
+	time.Sleep(3 * time.Second)
 }

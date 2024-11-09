@@ -16,12 +16,15 @@ type TCPPeer struct{
 	// if we dial a connection => outbound == true
 	// if we accept and retrieve a connection => outbound == false
 	outbound bool
+
+	Wg *sync.WaitGroup
 }
 
 func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer{
 	return &TCPPeer{
-		Conn : conn,
+		Conn: conn,
 		outbound: outbound,
+		Wg:  &sync.WaitGroup{},
 	}
 }
 
@@ -29,7 +32,6 @@ func (p *TCPPeer) Send(b []byte) error{
 	_, err := p.Conn.Write(b)
 	return err
 }
-
 
 type TCPTransportOpts struct{
 	ListenAddr string
@@ -47,12 +49,10 @@ type TCPTransport struct{
 	peers map[net.Addr]Peer
 }
 
-
-
 func NewTCPTransport(opts TCPTransportOpts) *TCPTransport{
 	return &TCPTransport{
 		TCPTransportOpts: opts,
-		rpcch: make(chan RPC),
+		rpcch: make(chan RPC,1024),
 	}
 }
 
@@ -109,7 +109,7 @@ func (t *TCPTransport) startAcceptLoop(){
 	}
 }
 
-type Temp struct{}
+
 
 func (t *TCPTransport) handleConn(conn net.Conn, outbound bool){
 
@@ -120,8 +120,6 @@ func (t *TCPTransport) handleConn(conn net.Conn, outbound bool){
 		conn.Close()
 	}()
 	peer := NewTCPPeer(conn,outbound)//Outbound peer becoz we are accepting (incoming connection)
-
-	
 
 	if err = t.HandshakeFunc(peer); err != nil{
 		return
@@ -138,15 +136,18 @@ func (t *TCPTransport) handleConn(conn net.Conn, outbound bool){
 
 	for {
 
-		err := t.Decoder.Decode(conn,&rpc)
+		err = t.Decoder.Decode(conn,&rpc)
 		if err!=nil{
 			return
 		}
 
-		rpc.From = conn.RemoteAddr()
+		rpc.From = conn.RemoteAddr().String()
 
-		t.rpcch <- rpc
-
+		peer.Wg.Add(1)
+		fmt.Println("waiting till stream is done")
+		t.rpcch <-rpc
+		peer.Wg.Wait()
+		fmt.Println("stream done continueing normal read loop")
 	}
 
 	
