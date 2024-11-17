@@ -148,7 +148,7 @@ func (s *Store) writeStream(key string,r io.Reader) (int64, error){
 
 	fullPathWithRoot := fmt.Sprintf("%s/%s",s.Root,pathKey.FullPath())
 
-	
+	 
 
 	f, err := os.Create(fullPathWithRoot)
 	if err!=nil{

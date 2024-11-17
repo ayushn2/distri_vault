@@ -31,7 +31,7 @@ func TestStoreDeleteKey(t *testing.T){
 
 	data := []byte("some jpg bytes")
 
-	if err := s.writeStream(key,bytes.NewReader(data)); err !=nil{
+	if _, err := s.writeStream(key,bytes.NewReader(data)); err !=nil{
 		t.Errorf(err.Error())
 	}
 
@@ -49,7 +49,7 @@ func TestStore(t *testing.T){
 		key := fmt.Sprintf("pizz%d",i)
 		data := []byte("some jpg bytes")
 
-		if err := s.writeStream(key,bytes.NewReader(data)); err !=nil{
+		if _, err := s.writeStream(key,bytes.NewReader(data)); err !=nil{
 			t.Errorf(err.Error())
 		}
 
