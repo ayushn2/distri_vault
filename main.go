@@ -1,15 +1,9 @@
 package main
 
 import (
-
-	"fmt"
-	"io"
-
+	"bytes"
 	"log"
-
 	"time"
-
-	// "time"
 
 	"github.com/ayushn2/distri_vault.git/p2p"
 )
@@ -43,29 +37,35 @@ func main(){
 		log.Fatal(s1.Start())
 	}() 
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 
 	go func(){
 		log.Fatal(s2.Start())
 	}()
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
-	// data := bytes.NewReader([]byte("my big data file here"))
-	// s2.Store("myprivatedata",data)
+	data := bytes.NewReader([]byte("my big data file here"))
+	s2.Store("picture.jpg",data)
+	time.Sleep(5 * time.Millisecond)
+		
 	
-	r, err := s2.Get("false")
-	if err != nil{
-		log.Fatal(err)
-	}
 
-	b, err := io.ReadAll(r)
-	if err != nil{
-		log.Fatal(err)
-	}
 
-	fmt.Println(string(b))
+	
+	
+	// r, err := s2.Get("picture.jpg")
+	// if err != nil{
+	// 	log.Fatal(err)
+	// }
 
+	// b, err := io.ReadAll(r)
+	// if err != nil{
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Println(string(b))
 
 	select{}
+
 }
