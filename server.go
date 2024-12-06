@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/gob"
 	"fmt"
 	"io"
@@ -87,7 +88,8 @@ type MessageGetFile struct{
 func (s *FileServer) Get (key string) (io.Reader,error){
 	if s.store.Has(key){
 		fmt.Printf("[%s] serving file [%s] from local disk\n",s.Transport.Addr(), key)
-		return s.store.Read(key)
+		_, r, err := s.store.Read(key)
+		return r, err
 	}
 	fmt.Printf("[%s] don't have file (%s) locally, fetching from network...\n",s.Transport.Addr(), key)
 
@@ -104,21 +106,23 @@ func (s *FileServer) Get (key string) (io.Reader,error){
 	time.Sleep(time.Millisecond * 500)
 
 	for _, peer := range s.peers{
-		fileBuffer := new(bytes.Buffer)
-		n, err := io.CopyN(fileBuffer, peer,21)
+		// First read the file size so we can limit the amount of bytes that we read from the connection, so it will not keep hanging.
+		var fileSize int64
+		binary.Read(peer, binary.LittleEndian, &fileSize)
+		n, err := s.store.Write(key, io.LimitReader(peer, 21))
 		if err != nil{
 			return nil,err
 		}
 		fmt.Printf("[%s] received (%d) bytes over the network from (%s): ",s.Transport.Addr(),n, peer.RemoteAddr())
-		fmt.Println(fileBuffer.String())
 
 		peer.CloseStream()
 	}
+	
+	_, r, err := s.store.Read(key)
 
-	select{}
-
-	return nil, nil
+	return r, err
 }
+
 
 func ( s *FileServer) Store(key string,r io.Reader) error{
 	// 1. Store this file to disk
@@ -220,18 +224,24 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 
 	fmt.Printf("[%s] serving file (%s) over the network\n",s.Transport.Addr(), msg.Key)
 
-	r, err := s.store.Read(msg.Key)
+	fileSize, r, err := s.store.Read(msg.Key)
 	if err != nil{
 		return err
 	}
+
+	if rc, ok := r.(io.ReadCloser); ok{
+		fmt.Println("closeing readCloser")
+		defer rc.Close()
+	} //Checking if the reader is a read closer, if it is then we close it
 
 	peer, ok := s.peers[from]
 	if !ok{
 		return fmt.Errorf("peer %s not in map", from)
 	}
 
+	// First send the "incomingStream" byte to the peer and then we can send the file size as an int64. 
 	peer.Send([]byte{p2p.IncomingStream})
-
+	binary.Write(peer, binary.LittleEndian, fileSize)
 	n, err := io.Copy(peer,r)
 	if err != nil{
 		return err

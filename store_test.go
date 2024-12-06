@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-
 	"testing"
 )
 
@@ -57,7 +56,7 @@ func TestStore(t *testing.T){
 			t.Errorf("Expected to have key %s",key)
 		}
 
-		r, err := s.Read(key)
+		_, r, err := s.Read(key)
 		if err!=nil{
 			t.Errorf(err.Error())
 		}
