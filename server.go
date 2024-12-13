@@ -43,19 +43,6 @@ func NewFileServer(opts FileServerOpts) *FileServer{
 	}
 }
 
-
-
-func (s *FileServer) stream(msg *Message) error{
-	peers := []io.Writer{}
-	for _, peer := range s.peers {
-		peers = append(peers, peer)
-	}
-	
-	mw := io.MultiWriter(peers...)
-	return gob.NewEncoder(mw).Encode(msg)
-	
-}
-
 func (s *FileServer) broadcast(msg *Message) error{
 	buf := new(bytes.Buffer)
 
@@ -110,7 +97,8 @@ func (s *FileServer) Get (key string) (io.Reader,error){
 		// First read the file size so we can limit the amount of bytes that we read from the connection, so it will not keep hanging.
 		var fileSize int64
 		binary.Read(peer, binary.LittleEndian, &fileSize)
-		n, err := s.store.Write(key, io.LimitReader(peer, 21))
+
+		n, err := s.store.WriteDecrypt(s.EncKey,key, io.LimitReader(peer, fileSize))
 		if err != nil{
 			return nil,err
 		}
@@ -152,19 +140,20 @@ func ( s *FileServer) Store(key string,r io.Reader) error{
 	
 	time.Sleep(time.Millisecond * 5)
 
-	// TODO: (@ayushn2) use a multiwriter here.
-	// Sending big file that needs to be streamed
-	for _, peer := range s.peers{
-		peer.Send([]byte{p2p.IncomingStream})
-		n, err := copyEncrypt(s.EncKey, fileBuffer, peer)
-		if err != nil{
-			return err
-		}
-		fmt.Println("received and written bytes to disk: ",n)
-	}
+	peers := []io.Writer{}
 
-	return nil
-	
+	for _, peer := range s.peers{
+		peers = append(peers, peer)
+	}
+	mw := io.MultiWriter(peers...)
+	mw.Write([]byte{p2p.IncomingStream})
+	n, err := copyEncrypt(s.EncKey, fileBuffer, mw)
+	if err != nil{
+		return err
+	}
+	fmt.Printf("[%s] received and written (%d) bytes to disk:\n ",s.Transport.Addr(),n)
+
+	return nil	
 }
 
 func (s *FileServer) Stop(){
@@ -275,10 +264,10 @@ func (s *FileServer) bootstrapNetwork() error{
 	for _,addr := range s.BootstrapNodes{
 		// s.Transport.Dial()
 		if len(addr) == 0{
-			continue
+			continue 
 		}
 		go func (addr string){
-			fmt.Println("attempting to connect with remote: ",addr)
+			fmt.Printf("[%s] attempting to connect with remote %s\n ",s.Transport.Addr(),addr)
 			if err := s.Transport.Dial(addr); err != nil{
 				
 				log.Println("dial error: ",err)
@@ -290,18 +279,15 @@ func (s *FileServer) bootstrapNetwork() error{
 }
 
 func (s *FileServer) Start() error{
+	fmt.Printf("[%s] starting fileserver...\n",s.Transport.Addr())
 	if err := s.Transport.ListenAndAccept(); err!= nil{
 		return err
 	}
-	
 	if len(s.BootstrapNodes) != 0{
 		s.bootstrapNetwork()
 		
 	}
-	
 	s.loop()
-	
-
 	return  nil
 }
 
