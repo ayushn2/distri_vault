@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// filename => clown.jpg
+// pat =>
+
 const defaultRootFolderName = "nainwalnetwork"
 
 func CASPathTransformFunc(key string) PathKey{
