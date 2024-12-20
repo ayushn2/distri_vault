@@ -30,6 +30,10 @@ type FileServer struct{
 	quitch chan struct{}
 }
 
+func hashFunc(){
+	
+}
+
 func NewFileServer(opts FileServerOpts) *FileServer{
 	storeOpts := StoreOpts{
 		Root: opts.StorageRoot,
