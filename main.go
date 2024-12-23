@@ -55,7 +55,7 @@ func main(){
 	s3.Store(key,data)
 	time.Sleep(5 * time.Millisecond)
 
-	if err := s3.store.Delete(key); err != nil{
+	if err := s3.store.Delete(s3.ID,key); err != nil{
 		log.Fatal(err)
 	}
 			
