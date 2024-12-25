@@ -41,8 +41,12 @@ distri_vault/
 ├── main.go              # Application entry point
 ├── crypto.go            # Handles encryption and decryption
 ├── peer.go              # Manages peer communication
-├── storage/
-│   ├── server_1/        # Folder for files added by server 1
-│   ├── server_2/        # Folder for files added by server 2
-│   └── ...
+├── server.go            # Manages server-side operations
+├── store.go             # Handles data storage and retrieval logic
+├── p2p/                 # Handles peer-to-peer communication protocols
+│   ├── encoding.go      # Data encoding for message transmission
+│   ├── handshake.go     # Manages peer handshake process
+│   ├── message.go       # Defines the structure and logic for messages
+│   ├── tcp_transport.go # Implements transport over TCP
+│   ├── transport.go     # General transport layer abstraction
 └── README.md            # Project documentation
